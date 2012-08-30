@@ -5,12 +5,20 @@ To install the library, simply:
 
 Usage is simple. To initialize:
   Shiva() -- arguments for this are filename, mode, arguments, hostname, port, and outfile.
-    filename and mode are required. filename is the path to the binary to be fuzzed, mode is the fuzzer type to use, "file", "args", "env", "client", and "server" are valid arguments.
-    "file" is for file fuzzing additionally, the "outfile" variable must be passed, this is where to store the fuzzcases. e.g. xorg.conf
-    "args" is for command line argument fuzzing, only the "arguments" variable is required.
-    "env" is an environment variable fuzzer, no other arguments are required.
-    "client" fuzzes a client socket, hostname and port are required.
-    "server" fuzzes a server socket, hostname and port are required.
+    - filename and mode are required. filename is the path to the binary to be fuzzed, mode is 
+      the fuzzer type to use, "file", "args", "env", "client", and "server" are valid arguments.
+
+    - "file" is for file fuzzing additionally, the "outfile" variable must be passed, this is where 
+      to store the fuzzcases. e.g. xorg.conf
+
+    - "args" is for command line argument fuzzing, only the "arguments" variable is required.
+
+    - "env" is an environment variable fuzzer, no other arguments are required.
+
+    - "client" fuzzes a client socket, hostname and port are required.
+
+    - "server" fuzzes a server socket, hostname and port are required.
+    
     In all but "args" mode, the arguments variable is optional.
 
 There are three functions that the user will use:
