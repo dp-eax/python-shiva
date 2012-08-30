@@ -1,0 +1,4 @@
+:localhost NOTICE AUTH :*** Looking up your hostname...
+:localhost NOTICE AUTH :*** Checking Ident
+:localhost NOTICE AUTH :*** Couldn't look up your hostname
+:localhost NOTICE AUTH :*** No Ident response
