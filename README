@@ -7,35 +7,30 @@ Usage is simple. To initialize:
   Shiva() -- arguments for this are filename, mode, arguments, hostname, port, and outfile.
     - filename and mode are required. filename is the path to the binary to be fuzzed, mode is 
       the fuzzer type to use, "file", "args", "env", "client", and "server" are valid arguments.
-
     - "file" is for file fuzzing additionally, the "outfile" variable must be passed, this is where 
       to store the fuzzcases. e.g. xorg.conf
-
     - "args" is for command line argument fuzzing, only the "arguments" variable is required.
-
     - "env" is an environment variable fuzzer, no other arguments are required.
-
     - "client" fuzzes a client socket, hostname and port are required.
-
     - "server" fuzzes a server socket, hostname and port are required.
-    
-    In all but "args" mode, the arguments variable is optional.
+    Note: In all but "args" mode, the arguments variable is optional.
 
 There are three functions that the user will use:
   Shiva.load() -- creates the fuzzcases, in socket modes it will send() the fuzzcase, as well.
-    The "file" argument is required in all modes except for "args".
-    In "file" and either socket mode, this argument specifies the file to get fuzzcases from.
-    In "env" mode, this should be the value of the environment variable being fuzzed, (the name of the environment variable will be passed to start()).
+    - The "file" argument is required in all modes except for "args".
+    - In "file" and either socket mode, this argument specifies the file to get fuzzcases from.
+    - In "env" mode, this should be the value of the environment variable being fuzzed, 
+      (the name of the environment variable will be passed to start()).
 
   Shiva.start() -- starts the process to be fuzzed, will also debug and catch exceptions once that feature is added.
-    Only the "env" mode requires an argument for this function, this is the name of the environment variable to be fuzzed.
+    - Only the "env" mode requires an argument for this function, this is the name of the environment variable to be fuzzed.
 
   Shiva.stop() -- stops the process and removes any open sockets.
-    No arguments are required for this.
+    - No arguments are required for this.
 
 Notes: 
-  stop() cannot be executed without having start()'ed the fuzzer. 
-  load() should be executed before start() in all cases except for socket modes.
+  - stop() cannot be executed without having start()'ed the fuzzer. 
+  - load() should be executed before start() in all cases except for socket modes.
 
 Example usage:
 
