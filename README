@@ -6,13 +6,9 @@ To install the library, simply:
 Usage is simple. To initialize:
   * Shiva() -- arguments for this are filename, mode, arguments, hostname, port, and outfile.
 
-    * filename and mode are required. filename is the path to the binary to be fuzzed,
+    * filename and mode are required. filename is the path to the binary to be fuzzed, mode is the fuzzer type to use, "file", "args", "env", "client", and "server" are valid arguments.
 
-    * mode is the fuzzer type to use, "file", "args", "env", "client", and "server" are valid arguments.
-
-    * "file" is for file fuzzing additionally, the "outfile" variable must be passed, this is where to store the
-
-    * fuzzcases. e.g. xorg.conf
+    * "file" is for file fuzzing additionally, the "outfile" variable must be passed, this is where to store the fuzzcases. e.g. xorg.conf
 
     * "args" is for command line argument fuzzing, only the "arguments" variable is required.
 
@@ -47,12 +43,19 @@ Notes:
 
 Example usage:
  > import shiva
+
  > fuzzer = shiva.Shiva("/usr/bin/ncat", "server", arguments="-lp4444", hostname="127.0.0.1", port=4444)
+
  > for i in range(1, 10):
+
  >  fuzzer.start()
+
  >  fuzzer.load("test/packet1")
+
  >  for i in range(1,200):
+
  >    fuzzer.load("test/packet2")
+
  >  fuzzer.stop()
 
  test/packet1:
