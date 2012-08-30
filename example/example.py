@@ -4,40 +4,40 @@ import shiva, time, sys
 
 def test_file():
   fuzzer = shiva.Shiva("/usr/bin/opera", "file", arguments="test/test1.html", outfile="test/test1.html")
-  for i in range(1, 10):
+  for i in range(1, len(fuzzer.cases)):
     fuzzer.start()
-    fuzzer.load("test/test.html")
+    fuzzer.load(i, "test/test.html")
     fuzzer.stop()
 
 def test_client():
   fuzzer = shiva.Shiva("/usr/bin/irssi", "client", hostname="127.0.0.1", port=6667)
-  for i in range(1, 10):
-    fuzzer.start()
-    fuzzer.load("test/packet1")
-    for i in range(1,200):
-      fuzzer.load("test/packet2")
-    fuzzer.stop()
+
+  fuzzer.start()
+  fuzzer.load(0, "test/packet1")
+  for i in range(1,len(fuzzer.cases)):
+    fuzzer.load(i, "test/packet2")
+  fuzzer.stop()
 
 def test_server():
   fuzzer = shiva.Shiva("/usr/bin/ncat", "server", arguments="-lp4444", hostname="127.0.0.1", port=4444)
-  for i in range(1, 10):
-    fuzzer.start()
-    fuzzer.load("test/packet1")
-    for i in range(1,200):
-      fuzzer.load("test/packet2")
-    fuzzer.stop()
+
+  fuzzer.start()
+  fuzzer.load(0, "test/packet1")
+  for i in range(1,len(fuzzer.cases)):
+    fuzzer.load(1, "test/packet2")
+  fuzzer.stop()
 
 def test_args():
   fuzzer = shiva.Shiva("/usr/bin/ncat", "args", arguments="127.0.0.1 ||")
-  for i in range(1,10):
-    fuzzer.load()
+  for i in range(1,len(fuzzer.cases)):
+    fuzzer.load(i)
     fuzzer.start()
     fuzzer.stop()
 
 def test_env():
   fuzzer = shiva.Shiva("/usr/bin/ncat", "env", arguments="127.0.0.1 4444")
-  for i in range(1,10):
-    fuzzer.load("||")
+  for i in range(1,len(fuzzer.cases)):
+    fuzzer.load(i, "||")
     fuzzer.start("HAHA")
     fuzzer.stop()
 

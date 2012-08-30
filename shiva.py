@@ -33,6 +33,7 @@ class Shiva():
 
     There are three functions that the user will use:
       * Shiva.load() -- creates the fuzzcases, in socket modes it will send() the fuzzcase, as well.
+        * The index argument is required, this is the position the fuzzer is at (see example below for clarification).
         * The "file" argument is required in all modes except for "args".
         * In "file" and either socket mode, this argument specifies the file to get fuzzcases from.
         * In "env" mode, this should be the value of the environment variable being fuzzed, (the name of the environment variable will be passed to start()).
@@ -50,12 +51,11 @@ class Shiva():
     Example usage:
       > import shiva
       > fuzzer = shiva.Shiva("/usr/bin/ncat", "server", arguments="-lp4444", hostname="127.0.0.1", port=4444)
-      > for i in range(1, 10):
-      >  fuzzer.start()
-      >  fuzzer.load("test/packet1")
-      >  for i in range(1,200):
-      >    fuzzer.load("test/packet2")
-      >  fuzzer.stop()
+      > fuzzer.start()
+      > fuzzer.load(0, "test/packet1")
+      > for i in range(1,len(fuzzer.cases)):
+      >   fuzzer.load(i, "test/packet2")
+      > fuzzer.stop()
 
       test/packet1:
         "GET || HTTP\1.1"
@@ -78,13 +78,14 @@ class Shiva():
     self.crash = 1 # initialize the crash variable, this will be used when debugging is implemented.
     self.filename = filename
     self.hostname = hostname
-    self.placeholder = ""  # this holds the state of the fuzz cases, ie: "AAAA"
+    self.cases = ()
     self.outfile = outfile
     self.sock = None
     self.pid = None
 
     self.mode = { "file":0, "args":1, "env":2, "client":3, "server":4 }[mode]
     self.check_init()
+    self.generator()
 
   # make sure that all of the arguments are right, otherwise raise an exception.
   def check_init(self):
@@ -142,10 +143,22 @@ class Shiva():
 
   # generator function, the core of the fuzzer, this will be vastly improved...
   def generator(self):
-    self.placeholder += "A"
+    nums = range(1, 8000, 50)
+    fmt_strings = ("%s%p%x%d", ".1024d", "%.2049d", "%p%p%p%p", "%x%x%x%x", "%d%d%d%d", "%s%s%s%s",
+       "%99999999999s", "%08x", "%%20d", "%%20n", "%%20x", "%%20s", "%s%s%s%s%s%s%s%s%s%s",
+       "%p%p%p%p%p%p%p%p%p%p", "%#0123456x%08x%x%s%p%d%n%o%u%c%h%l%q%j%z%Z%t%i%e%g%f%a%C%S%08x%%",
+       "%s" * 129, "%x" * 257)
+    ints = (-1, 0, 0x100, 0x1000, 0x3fffffff, 0x7ffffffe, 0x7fffffff, 0x80000000, 0xfffffffe,
+       0xffffffff, 0x10000, 0x100000)
+
+    for i in nums:
+      self.cases += ("A"*i, "P"*i, chr(0x15)*i)
+
+    self.cases += fmt_strings
+    self.cases += ints
 
   # parse file for location to inject fuzzcase... this needs to be improved. it's ugly as hell.
-  def split(self, line):
+  def split(self, line, index):
     self.fuzzcase = ""
     temp = line.split('|')
     x = 0
@@ -154,17 +167,16 @@ class Shiva():
         self.fuzzcase += i
         x = 1
       else:
-        self.generator()
-        self.fuzzcase += self.placeholder
+        self.fuzzcase += self.cases[index]
         x = 0
 
   # creates a fuzzcase, loads from file (or arguments, etc.).
-  def load(self, file=None):
+  def load(self, index, file=None):
     if self.mode != 1 and file == None:
       raise Exception("Set the 'file' argument.")
 
     if self.mode == 1:
-      self.split(self.arguments)
+      self.split(self.arguments, index)
 
     elif self.mode == 2:
       self.split(file)
@@ -172,7 +184,7 @@ class Shiva():
     else:
       f = open(file, 'r')
       for line in f.readlines():
-        self.split(line)
+        self.split(line, index)
       f.close()
       
     if self.mode == 0:

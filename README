@@ -17,6 +17,7 @@ Usage is simple. To initialize:
 
 There are three functions that the user will use:
   Shiva.load() -- creates the fuzzcases, in socket modes it will send() the fuzzcase, as well.
+    - The index argument is required, this is the position the fuzzer is at (see example below for clarification).
     - The "file" argument is required in all modes except for "args".
     - In "file" and either socket mode, this argument specifies the file to get fuzzcases from.
     - In "env" mode, this should be the value of the environment variable being fuzzed, 
@@ -38,12 +39,11 @@ Example usage:
  import shiva
 
  fuzzer = shiva.Shiva("/usr/bin/ncat", "server", arguments="-lp4444", hostname="127.0.0.1", port=4444)
- for i in range(1, 10):
-   fuzzer.start()
-   fuzzer.load("test/packet1")
-   for i in range(1,200):
-     fuzzer.load("test/packet2")
-   fuzzer.stop()
+ fuzzer.start()
+ fuzzer.load(0, "test/packet1")
+ for i in range(1, len(fuzzer.cases)):
+   fuzzer.load(i, "test/packet2")
+ fuzzer.stop()
 ---------- 
 
  test/packet1:
