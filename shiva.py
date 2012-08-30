@@ -167,7 +167,7 @@ class Shiva():
         self.fuzzcase += i
         x = 1
       else:
-        self.fuzzcase += self.cases[index]
+        self.fuzzcase += str(self.cases[index])
         x = 0
 
   # creates a fuzzcase, loads from file (or arguments, etc.).
