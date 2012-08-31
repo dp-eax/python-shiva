@@ -1,5 +1,8 @@
 Shiva is a fuzzer library in Python. 
 
+Dependencies:
+  python-ptrace (https://bitbucket.org/haypo/python-ptrace/overview)
+
 To install the library, simply:
   $ sudo python setup.py install
 
@@ -33,6 +36,8 @@ Notes:
   - stop() cannot be executed without having start()'ed the fuzzer. 
   - load() should be executed before start() in all cases except for socket modes.
 
+Upon a crash the self.crash variable is set to 1 and the EIP and fuzzcase are written to a file (filename + ".log").
+
 Example usage:
 
 ---------
@@ -43,6 +48,8 @@ Example usage:
  fuzzer.load(0, "test/packet1")
  for i in range(1, len(fuzzer.cases)):
    fuzzer.load(i, "test/packet2")
+   if fuzzer.crash:
+     fuzzer.stop()
  fuzzer.stop()
 ---------- 
 

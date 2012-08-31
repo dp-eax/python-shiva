@@ -21,7 +21,15 @@ from ptrace.debugger import ProcessExit, ProcessSignal
 
 class Shiva():
   """
-    Shiva is a fuzzer library in Python. Usage is simple. To initialize:
+    Shiva is a fuzzer library in Python.
+
+    Dependencies:
+      python-ptrace (https://bitbucket.org/haypo/python-ptrace/overview)
+
+    To install the library, simply:
+      $ sudo python setup.py install
+
+    Usage is simple. To initialize:
       * Shiva() -- arguments for this are filename, mode, arguments, hostname, port, and outfile.
          * filename and mode are required. filename is the path to the binary to be fuzzed,
          * mode is the fuzzer type to use, "file", "args", "env", "client", and "server" are valid arguments.
