@@ -15,7 +15,9 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-import os, socket, time
+import os, socket, time, signal
+from ptrace.debugger.debugger import PtraceDebugger
+from ptrace.debugger import ProcessExit, ProcessSignal
 
 class Shiva():
   """
@@ -48,6 +50,8 @@ class Shiva():
       * stop() cannot be executed without having start()'ed the fuzzer. 
       * load() should be executed before start() in all cases except for socket modes.
 
+    Upon a crash the self.crash variable is set to 1 and the EIP and fuzzcase are written to a file (filename + ".log").
+
     Example usage:
       > import shiva
       > fuzzer = shiva.Shiva("/usr/bin/ncat", "server", arguments="-lp4444", hostname="127.0.0.1", port=4444)
@@ -55,6 +59,8 @@ class Shiva():
       > fuzzer.load(0, "test/packet1")
       > for i in range(1,len(fuzzer.cases)):
       >   fuzzer.load(i, "test/packet2")
+      >   if fuzzer.crash:
+      >     fuzzer.stop()
       > fuzzer.stop()
 
       test/packet1:
@@ -75,7 +81,7 @@ class Shiva():
     if port != None:
       self.port = int(port)
 
-    self.crash = 1 # initialize the crash variable, this will be used when debugging is implemented.
+    self.crash = 0 # initialize the crash variable, this will be used when debugging is implemented.
     self.filename = filename
     self.hostname = hostname
     self.cases = ()
@@ -86,6 +92,7 @@ class Shiva():
     self.mode = { "file":0, "args":1, "env":2, "client":3, "server":4 }[mode]
     self.check_init()
     self.generator()
+    signal.signal(signal.SIGUSR1, self.handler)
 
   # make sure that all of the arguments are right, otherwise raise an exception.
   def check_init(self):
@@ -102,6 +109,12 @@ class Shiva():
         raise Exception("Set 'hostname' for socket modes.")
       if self.port == None:
         raise Exception("Set 'port' for socket modes.")
+
+  def handler(self):
+    self.crash = 1
+    f = open(self.filename + ".log", "a+")
+    f.writelines("Fuzzcase: \n" + str(self.cases[self.index]) + "\n\n")
+    return
 
   # creates server for use with mode 3 (client)
   def server(self):
@@ -121,18 +134,40 @@ class Shiva():
   def start(self, env=None):
     if env == None and self.mode == 2:
       raise Exception("Set 'env' for 'env' mode.")
+    self.ppid = os.getpid()
 
-    self.pid = os.fork()
-    if self.pid == 0:
-      if self.mode == 3:
-        time.sleep(0.1) # wait a tenth of a second to make sure the fuzz server has loaded before spawning client.
+    if os.fork() == 0:
+      self.pid = os.fork()
 
-      if self.mode == 1:  # if args fuzz, the arguments are the fuzzcase.
-        os.execl(self.filename, self.filename, self.fuzzcase)
-      elif self.mode == 2: # sets the environment variables for an env fuzz.
-        os.execle(self.filename, self.filename, {env:self.fuzzcase})
-      else:  # everything else use the self.arguments variable, straight from the user
-        os.execl(self.filename, self.filename, self.arguments)
+      if self.pid == 0:
+        if self.mode == 3:
+          time.sleep(0.1) # wait a tenth of a second to make sure the fuzz server has loaded before spawning client.
+
+        if self.mode == 1:  # if args fuzz, the arguments are the fuzzcase.
+          os.execl(self.filename, self.filename, self.fuzzcase)
+        elif self.mode == 2: # sets the environment variables for an env fuzz.
+          os.execle(self.filename, self.filename, {env:self.fuzzcase})
+        else:  # everything else use the self.arguments variable, straight from the user
+          os.execl(self.filename, self.filename, self.arguments)
+
+      else:
+        dbg = PtraceDebugger()
+        process = dbg.addProcess(self.pid, True)
+
+        while 1:
+          event = process.waitEvent()
+
+          if isinstance(event, ProcessExit):
+            return
+
+          if isinstance(event, ProcessSignal) and (event.signum == 6 or event.signum == 11):
+            regs = process.dumpRegs()
+            f = open(self.filename + ".log", "a+")
+            f.writelines("Received signal: " + str(event.signum) + "\nEIP: " + str(regs.eip))
+            f.close()
+            os.kill(self.ppid, 10)            
+          else:
+            process.cont()
 
     else:
       if self.mode == 3:
@@ -167,11 +202,13 @@ class Shiva():
         self.fuzzcase += i
         x = 1
       else:
-        self.fuzzcase += str(self.cases[index])
+        self.fuzzcase += self.cases[index]
         x = 0
 
   # creates a fuzzcase, loads from file (or arguments, etc.).
   def load(self, index, file=None):
+    self.index = index
+
     if self.mode != 1 and file == None:
       raise Exception("Set the 'file' argument.")
 
