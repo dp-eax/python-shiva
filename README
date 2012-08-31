@@ -1,5 +1,7 @@
 Shiva is a fuzzer library in Python. 
 
+Detailed documentation can be found at: http://www.blackhatlibrary.net/Shiva.
+
 Dependencies:
   python-ptrace (https://bitbucket.org/haypo/python-ptrace/overview)
 
