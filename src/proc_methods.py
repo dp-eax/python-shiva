@@ -1,4 +1,5 @@
 import os, time, signal
+import platform
 
 if os.name == "posix":
   from ptrace.ptrace import *
@@ -43,7 +44,10 @@ class proc_methods():
           os.kill(self.ppid, signal.SIGUSR1)
           ptrace(PTRACE_GETREGS, self.gcpid, None, regs)
           f = open(self.filename.split('/')[-1] + ".log", "a+")
-          f.writelines("\nReceived signal: " + strsignal(sig.si_signo) + "\nRIP: " + str(hex(regs.rip)) + "\n")
+          if platform.machine() == "x86_64":
+            f.writelines("\nReceived signal: " + strsignal(sig.si_signo) + "\nRIP: " + str(hex(regs.rip)) + "\n")
+          else:
+            f.writelines("\nReceived signal: " + strsignal(sig.si_signo) + "\nEIP: " + str(hex(regs.eip)) + "\n")
           f.close()
           ptrace(PTRACE_DETACH, self.gcpid, None, None)
           break
