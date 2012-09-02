@@ -121,6 +121,7 @@ class Shiva(servers, proc_methods, generator):
       if self.port == None:
         raise Exception("Set 'port' for socket modes.")
 
+  # crash handler for the target process, write the naughty fuzzcase to a file
   def handler(self, signum, frame):
     self.crash = 1
     f = open(self.filename.split('/')[-1] + ".log", "a+")
