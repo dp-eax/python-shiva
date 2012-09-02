@@ -3,9 +3,14 @@ Shiva is a fuzzer library in Python.
 Detailed documentation can be found at: http://www.blackhatlibrary.net/Shiva.
 
 Dependencies:
-  python-ptrace (https://bitbucket.org/haypo/python-ptrace/overview)
+  python-ptrace (https://bitbucket.org/vorbis/python-ptrace/)
+    $ git clone https://bitbucket.org/vorbis/python-ptrace.git
+    $ cd python-ptrace
+    $ sudo python setup.py install
 
 To install the library, simply:
+  $ git clone https://bitbucket.org/vorbis/python-shiva.git
+  $ cd python-shiva
   $ sudo python setup.py install
 
 Usage is simple. To initialize:
@@ -43,7 +48,7 @@ Upon a crash the self.crash variable is set to 1 and the EIP and fuzzcase are wr
 Example usage:
 
 ---------
- import shiva
+ from shiva.shiva import Shiva
 
  fuzzer = shiva.Shiva("/usr/bin/ncat", "server", arguments="-lp4444", hostname="127.0.0.1", port=4444)
  fuzzer.start()
