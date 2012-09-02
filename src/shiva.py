@@ -96,6 +96,7 @@ class Shiva(servers, proc_methods, generator):
     self.cases = ()
     self.outfile = outfile
     self.sock = None
+    self.s = None
     self.pid = None
     self.env = None
     self.mode = { "file":0, "args":1, "env":2, "client":3, "server":4 }[mode]
@@ -120,12 +121,12 @@ class Shiva(servers, proc_methods, generator):
       if self.port == None:
         raise Exception("Set 'port' for socket modes.")
 
-  def handler(self):
+  def handler(self, signum, frame):
     self.crash = 1
     f = open(self.filename.split('/')[-1] + ".log", "a+")
-    f.writelines("Fuzzcase: \n" + str(self.cases[self.index]) + "\n\n")
-    return
-
+    f.writelines("Crash with: \n" + str(self.fuzzcase) + "\n")
+    f.close()
+ 
   # creates a fuzzcase, loads from file (or arguments, etc.).
   def load(self, index, file=None):
     self.index = index
@@ -137,7 +138,7 @@ class Shiva(servers, proc_methods, generator):
       self.split(self.arguments, index)
 
     elif self.mode == 2:
-      self.split(file)
+      self.split(file, index)
 
     else:
       f = open(file, 'r')
@@ -154,5 +155,5 @@ class Shiva(servers, proc_methods, generator):
       try:
         self.sock.send(bytes(self.fuzzcase, "utf-8"))
       except:
-        pass
+        return
 

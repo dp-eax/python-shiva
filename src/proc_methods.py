@@ -1,50 +1,53 @@
-import os, time
+import os, time, signal
+
 if os.name == "posix":
   from ptrace.ptrace import *
 
 class proc_methods():
+  def handler2(self, signum, frame):
+    try:
+      os.kill(self.gcpid, signal.SIGKILL)
+    except:
+      exit()
+    exit()
+
   # linux debugger
   def linux_dbg(self, env):
     if self.mode == 2:
       env = {env:self.fuzzcase}
 
-    pid = os.fork()
-    if pid == 0:
+    self.gcpid = os.fork()
+    if self.gcpid == 0:
       ptrace(PTRACE_TRACEME, 0, None, None)
       if self.mode == 1:  # if args fuzz, the arguments are the fuzzcase.
-          os.execl(self.filename, self.filename, self.fuzzcase)
+        os.execv(self.filename, [self.filename.split('/')[-1],] + self.fuzzcase.split())
       elif self.mode == 2: # sets the environment variables for an env fuzz.
-        os.execle(self.filename, self.filename, {env:self.fuzzcase})
+        os.execve(self.filename, [self.filename.split('/')[-1],] + self.arguments.split(), {env:self.fuzzcase})
       else:  # everything else use the self.arguments variable, straight from the user
-        os.execl(self.filename, self.filename, self.arguments)
+        os.execv(self.filename, [self.filename.split('/')[-1],] + self.arguments.split())
 
     else:
+      signal.signal(signal.SIGUSR2, self.handler2)
       regs = user_regs_struct()
       sig = siginfo()
 
       while 1:
+        ptrace(PTRACE_CONT, self.gcpid, None, None)
         status = wait()
-        if WIFEXITED(status) != 0:
+        if WIFEXITED(status):
           break
 
-        ptrace(PTRACE_GETSIGINFO, pid, None, sig)
+        ptrace(PTRACE_GETSIGINFO, self.gcpid, None, sig)
 
         if sig.si_signo == 6 or sig.si_signo == 11:
-          ptrace(PTRACE_GETREGS, pid, None, regs)
+          os.kill(self.ppid, signal.SIGUSR1)
+          ptrace(PTRACE_GETREGS, self.gcpid, None, regs)
           f = open(self.filename.split('/')[-1] + ".log", "a+")
-          f.writelines("Received signal: " + strsignal(sig.si_signo) + "\nRIP: " + str(regs.rip))
+          f.writelines("\nReceived signal: " + strsignal(sig.si_signo) + "\nRIP: " + str(hex(regs.rip)) + "\n")
           f.close()
-          print("RIP: " + str(hex(regs.rip)))
+          ptrace(PTRACE_DETACH, self.gcpid, None, None)
           break
-
-        ptrace(PTRACE_CONT, pid, None, None)
-
-      ptrace(PTRACE_DETACH, pid, None, None)
-
-      try:
-        os.kill(self.ppid, 10)
-      except:
-        return
+          
 
   # will debug the fuzzed process, also will spawn the servers and clients for modes 3 and 4
   def start(self, env=None):
@@ -55,6 +58,9 @@ class proc_methods():
     self.pid = os.fork()
 
     if self.pid == 0:
+      if self.mode == 3:
+        time.sleep(0.1)
+
       if os.name == "posix":
         self.linux_dbg(env)
 
@@ -74,6 +80,14 @@ class proc_methods():
       self.sock.close()
       self.sock = None
 
-    os.system("kill $(ps -o pid= -s $(ps -o sess --no-heading --pid " + str(self.pid) + "))")
-    #os.kill(self.pid, 9)
+    if self.s != None:
+      self.s.close()
+      self.s = None
+
+    if self.crash == 1:
+      self.crash = 0
+      os.kill(self.pid, signal.SIGKILL)
+    else:
+      os.kill(self.pid, signal.SIGUSR2)
+
     self.pid = None
